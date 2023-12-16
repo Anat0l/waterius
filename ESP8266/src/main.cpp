@@ -1,6 +1,11 @@
+#ifdef ESP8266
 #include <user_interface.h>
 #include <umm_malloc/umm_heap_select.h>
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #include <ArduinoJson.h>
 #include "Logging.h"
 #include "config.h"
@@ -23,7 +28,10 @@ MasterI2C masterI2C;  // Для общения с Attiny85 по i2c
 SlaveData data;       // Данные от Attiny85
 Settings sett;        // Настройки соединения и предыдущие показания из EEPROM
 CalculatedData cdata; // вычисляемые данные
+
+#ifdef ESP8266
 ADC_MODE(ADC_VCC);
+#endif
 Ticker voltage_ticker;
 
 /*
@@ -35,16 +43,21 @@ void setup()
     LOG_INFO(F("Booted"));
     LOG_INFO(F("Build: ") << __DATE__ << F(" ") << __TIME__);
 
-    static_assert((sizeof(Settings) == 960), "sizeof Settings != 960");
+    static_assert((sizeof(Settings) == 960UL), "sizeof Settings != 960");
 
     masterI2C.begin(); // Включаем i2c master
 
+#ifdef ESP8266
+//TODO
     HeapSelectIram ephemeral;
     LOG_INFO(F("IRAM free: ") << ESP.getFreeHeap() << F(" bytes"));
     {
         HeapSelectDram ephemeral;
         LOG_INFO(F("DRAM free: ") << ESP.getFreeHeap() << F(" bytes"));
     }
+#endif
+#ifdef ESP32
+#endif
 
     get_voltage()->begin();
     voltage_ticker.attach_ms(300, []()
@@ -187,5 +200,10 @@ void loop()
 
     masterI2C.sendCmd('Z'); // "Можешь идти спать, attiny"
 
+#ifdef ESP8266
     ESP.deepSleepInstant(0, RF_DEFAULT); // Спим до следущего включения EN. Instant не ждет 92мс
+#endif
+#ifdef ESP32
+    esp_deep_sleep_start();
+#endif
 }

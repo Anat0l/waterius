@@ -23,7 +23,12 @@
 #define MQTT_MAX_PACKET_SIZE 256
 #define MQTT_DELAY_SUBSCRIPTION 100 // задержка для получения данных по подписке
 
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "master_i2c.h"

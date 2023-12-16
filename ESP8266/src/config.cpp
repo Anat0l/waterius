@@ -3,15 +3,21 @@
 #include "Logging.h"
 
 #include "Blynk/BlynkConfig.h"
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #include <IPAddress.h>
 #include <EEPROM.h>
 #include "utils.h"
 #include "porting.h"
 #include "sync_time.h"
 #include "wifi_helpers.h"
+#ifdef ESP8266
 #include "flash_hal.h"
-
+#endif
 
 // Конвертируем значение переменных компиляции в строк
 #define VALUE_TO_STRING(x) #x
@@ -258,8 +264,9 @@ bool load_config(Settings &sett)
             LOG_INFO(F("--- WIFI ---- "));
             LOG_INFO(F("wifi_ssid=") << sett.wifi_ssid);
             LOG_INFO(F("wifi_channel=") << sett.wifi_channel);
+#ifdef ESP8266
             LOG_INFO(F("wifi_phy_mode=") << wifi_phy_mode_title((WiFiPhyMode_t)sett.wifi_phy_mode));
-
+#endif
             // Всегда одно и тоже будет
             LOG_INFO(F("--- Counters ---- "));
             LOG_INFO(F("channel0 start=") << sett.channel0_start << F(", impulses=") << sett.impulses0_start << F(", factor=") << sett.factor0 << F(", name=") << sett.counter0_name);
@@ -351,12 +358,12 @@ void factory_reset(Settings &sett)
     LOG_INFO(F("Save waterius_key=") << sett.waterius_key);
     String waterius_key = sett.waterius_key;
 
-    ESP.eraseConfig();
+    //TODO ESP.eraseConfig();
     delay(100);
     LOG_INFO(F("EEPROM erased"));
 
     // The flash cache maps the physical flash into the address space at offset  \ FS_PHYS_ADDR - ?
-    ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
+    //TODO ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
     LOG_INFO(F("0x40200000 erased"));
 
     delay(500);
@@ -368,5 +375,10 @@ void factory_reset(Settings &sett)
 
     delay(500);
 
+#ifdef ESP8266
     ESP.reset();
+#endif
+#ifdef ESP32
+    ESP.restart();
+#endif
 }

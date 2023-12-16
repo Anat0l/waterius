@@ -44,8 +44,8 @@ inline Print &operator<<(Print &obj, T arg)
 	do                                                                 \
 	{                                                                  \
 		char logHeap[10];                                              \
-		snprintf_P(logHeap, sizeof(logHeap), PSTR("-%03d/%02d"),       \
-				   ESP_getFreeHeap1024(), ESP_getHeapFragmentation()); \
+		snprintf_P(logHeap, sizeof(logHeap), PSTR("-%03d"),       \
+				   int(ESP.getFreeHeap() / 1024)); \
 		Serial << String(logHeap);                                     \
 	} while (0)
 #endif
@@ -55,11 +55,22 @@ inline Print &operator<<(Print &obj, T arg)
 #endif
 
 // Default do no logging...
+#ifdef ESP8266                          
 #define LOG_BEGIN(baud)                 \
 	do                                  \
 	{                                   \
 		Serial.begin(baud, SERIAL_8N1); \
 	} while (0)
+#endif
+
+#ifdef ESP32                            
+#define LOG_BEGIN(baud)                 \
+	do                                  \
+	{                                   \
+		Serial.begin(baud);             \
+	} while (0)
+#endif
+
 #define LOG_END()       \
 	do                  \
 	{                   \

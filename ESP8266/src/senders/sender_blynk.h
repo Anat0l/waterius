@@ -7,8 +7,14 @@
 // email + subject + message length
 #define BLYNK_MAX_SENDBYTES 512
 
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+#endif
 #include <ArduinoJson.h>
 #include "master_i2c.h"
 #include "Logging.h"

@@ -2,8 +2,12 @@
 #include "Logging.h"
 #include "utils.h"
 #include <LittleFS.h>
+#ifdef ESP8266
 #include <ESP8266WiFiScan.h>
-
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #define WIFI_SET_MODE_ATTEMPTS 2
 
 // Adoption of Tasmota wifi module
@@ -11,6 +15,8 @@
 
 void wifi_set_mode(WiFiMode_t wifi_mode)
 {
+#ifdef ESP8266
+//TODO
     if (WiFi.getMode() == wifi_mode)
     {
         return;
@@ -39,6 +45,7 @@ void wifi_set_mode(WiFiMode_t wifi_mode)
     {
         delay(30); // Must allow for some time to init.
     }
+#endif
 }
 
 void wifi_begin(Settings &sett, WiFiMode_t wifi_mode)
@@ -50,6 +57,8 @@ void wifi_begin(Settings &sett, WiFiMode_t wifi_mode)
 
     delay(200); // подождем чтобы проинициализировалась сеть
 
+#ifdef ESP8266
+//TODO
     wifi_set_mode(wifi_mode); // Disable AP mode
     if (sett.wifi_phy_mode)
     {
@@ -58,6 +67,7 @@ void wifi_begin(Settings &sett, WiFiMode_t wifi_mode)
             LOG_ERROR(F("WIFI: Failed set phy mode ") << sett.wifi_phy_mode);
         }
     }
+#endif
 
     if (!WiFi.getAutoConnect()) // Tasmota..
     {
@@ -109,7 +119,7 @@ void wifi_shutdown()
     yield();
     wifi_set_mode(WIFI_OFF);
 }
-
+#ifdef ESP8266
 String wifi_phy_mode_title(const WiFiPhyMode_t m)
 {
     // WiFi.setPhyMode(WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_MODE_11N = 3);
@@ -125,7 +135,7 @@ String wifi_phy_mode_title(const WiFiPhyMode_t m)
         return String((int)m);
     }
 }
-
+#endif
 
 bool wifi_connect(Settings &sett, WiFiMode_t wifi_mode /*= WIFI_STA*/)
 {
@@ -157,6 +167,9 @@ bool wifi_connect(Settings &sett, WiFiMode_t wifi_mode /*= WIFI_STA*/)
 /* Важно: вызывать функцию, после сканирования WiFi сетей */
 void write_ssid_to_file()
 {
+
+#ifdef ESP8266
+//TODO
     // LittleFS.remove("/ssid.txt");
     File file = LittleFS.open("/ssid.txt", "w");
     if (!file)
@@ -212,4 +225,5 @@ void write_ssid_to_file()
 
     delay(500); // Make sure the CREATE and LASTWRITE times are different
     file.close();
+#endif
 }

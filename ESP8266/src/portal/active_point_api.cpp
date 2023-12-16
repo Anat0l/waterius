@@ -1,5 +1,7 @@
 #include "active_point_api.h"
+#ifdef ESP8266
 #include "ESPAsyncTCP.h"
+#endif
 #include "WebHandlerImpl.h"
 #include <IPAddress.h>
 #include <LittleFS.h>

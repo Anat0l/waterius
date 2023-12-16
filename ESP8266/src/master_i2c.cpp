@@ -30,7 +30,12 @@ void MasterI2C::begin()
 {
     Wire.begin(SDA_PIN, SCL_PIN);
     Wire.setClock(100000L);
+#ifdef ESP8266
     Wire.setClockStretchLimit(2500L); // Иначе связь с Attiny не надежная будут FF FF в хвосте посылки
+#endif
+#ifdef ESP32
+    Wire.setTimeout(2500L);
+#endif
 }
 
 bool MasterI2C::sendCmd(uint8_t cmd)

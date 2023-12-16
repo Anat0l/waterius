@@ -1,4 +1,10 @@
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#include <mbedtls/sha256.h>
+#endif
 #include "utils.h"
 #include "Logging.h"
 #include "time.h"
@@ -229,10 +235,13 @@ void log_system_info()
 	LOG_INFO(F("WIFI: SSID: ") << WiFi.SSID());
 	LOG_INFO(F("WIFI: BSID: ") << WiFi.BSSIDstr());
 	LOG_INFO(F("WIFI: Channel: ") << WiFi.channel());
+#ifdef ESP8266
+//TODO
 	LOG_INFO(F("WIFI: Mode current: ") << wifi_phy_mode_title(WiFi.getPhyMode()));
+#endif
 	LOG_INFO(F("WIFI: RSSI: ") << WiFi.RSSI() << F("dBm"));
 	LOG_INFO(F("------------ IP Info ------------"));
-	LOG_INFO(F("IP: Host name: ") << WiFi.hostname());
+	//TODO LOG_INFO(F("IP: Host name: ") << WiFi.hostname());
 	LOG_INFO(F("IP: IP adress: ") << WiFi.localIP().toString());
 	LOG_INFO(F("IP: Subnet mask: ") << WiFi.subnetMask());
 	LOG_INFO(F("IP: Gateway IP: ") << WiFi.gatewayIP().toString());
@@ -244,6 +253,7 @@ extern void generateSha256Token(char *token, const int token_len, const char *em
 {
 	LOG_INFO(F("-- START -- ") << F("Generate SHA256 token from email"));
 
+#ifdef ESP8266
 	auto x = BearSSL::HashSHA256();
 	if (email != nullptr && strlen(email))
 	{
@@ -273,6 +283,27 @@ extern void generateSha256Token(char *token, const int token_len, const char *em
 		token[i] = digits[*hash >> 4];
 		token[i + 1] = digits[*hash & 0xF];
 	}
+#endif 
+#ifdef ESP32
+	unsigned char sha256Result[32];
+	unsigned char *hash = &sha256Result[0];
+	mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts(&ctx, 0);
+	randomSeed(micros());
+	uint32_t salt = rand();
+    mbedtls_sha256_update(&ctx, (const unsigned char*)salt, 4);
+    mbedtls_sha256_finish(&ctx, sha256Result);
+    mbedtls_sha256_free(&ctx);
+
+	static const char digits[] = "0123456789ABCDEF";
+
+	for (int i = 0; i < 32 && i < token_len - 1; i += 2, hash++)
+	{
+		token[i] = digits[*hash >> 4];
+		token[i + 1] = digits[*hash & 0xF];
+	}
+#endif
 
 	LOG_INFO(F("SHA256 token: ") << token);
 	LOG_INFO(F("-- END --"));

@@ -10,7 +10,12 @@
 #ifndef SENDERWATERIUS_h_
 #define SENDERWATERIUS_h_
 #ifndef WATERIUS_RU_DISABLED
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #include "setup.h"
 #include "master_i2c.h"
 #include "Logging.h"

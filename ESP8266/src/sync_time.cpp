@@ -2,7 +2,12 @@
 #include "Logging.h"
 #include <IPAddress.h>
 #include <WiFiUdp.h>
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WiFi.h>
+#endif
 #include <time.h>
 
 // Модуль основан на следующих модулях
@@ -201,11 +206,20 @@ uint64_t get_ntp_nanos(const String &ntp_server_name)
 {
     IPAddress ntp_server_ip;
 
+#ifdef ESP8266
     if (WiFi.hostByName(ntp_server_name.c_str(), ntp_server_ip, DNS_TIMEOUT) != 1)
     {
         LOG_ERROR(F("NTP: Unable to resolve ") << ntp_server_name);
         return 0;
     }
+#endif 
+#ifdef ESP32
+    if (WiFi.hostByName(ntp_server_name.c_str(), ntp_server_ip) != 1)
+    {
+        LOG_ERROR(F("NTP: Unable to resolve ") << ntp_server_name);
+        return 0;
+    }
+#endif
 
     LOG_INFO(F("NTP: NtpServer ") << ntp_server_name << F(" IP ") << ntp_server_ip.toString());
 
