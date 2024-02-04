@@ -6,6 +6,7 @@
         <title>Сброс устройства</title>
         <link rel="stylesheet" href="/static/style.css">
         <script src="/static/common.js"></script>
+        <script src="/static/strings.js"></script>
     </head>
     <body onload="_init({
         back: '/index.html',
@@ -13,7 +14,7 @@
         next: '/index.html',
         next_wizard: '/index.html'
     })">
-        <form onsubmit="formSubmit(event, this, 'reset');">
+        <form onsubmit="formSubmit(event, this, '/api/reset');">
             <div class="wrap">
                 <div class="container f1">
                     <header>

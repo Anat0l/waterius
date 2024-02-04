@@ -59,6 +59,16 @@ function _init(_pages) {
 
         return;
     }
+    
+    if(document.getElementById('hall_model'))
+    {
+        document.getElementById('hall_model').addEventListener('change', function() {
+            var v = document.getElementById('hall_model').value;
+            if (v != '') {
+                document.getElementById('factor').value = v;
+            }
+        }, false);
+    }
 }
 function parseQueryParams(){
     // parse location.search
@@ -78,11 +88,11 @@ function checkboxToggle(inp){
         inp.checked ? _from.classList.remove('hd') : _from.classList.add('hd');
     }
 }
-function formError(html){
+function formError(error_code){
     const _fe = document.querySelector('.form-error');
     if(!_fe) return;
-    if(!html) return _fe.classList.add('hd');
-    _fe.innerHTML = html;
+    if(!error_code) return _fe.classList.add('hd');
+    _fe.innerHTML = tr(error_code);
     _fe.classList.remove('hd');
 }
 
@@ -147,7 +157,7 @@ function formSubmit(event, form, action) {
         data.append(inp.name, inp.value.trim());
     });
     
-    ajax('/api/' + action, {
+    ajax(action, {
         method: 'POST',
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -180,7 +190,7 @@ function formSubmit(event, form, action) {
                 const _el = document.getElementById(k + '-error');
                 if(!_el) continue;
                 _el.classList.remove('hd')
-                _el.innerText = data.errors[k];
+                _el.innerText = tr(data.errors[k]);
             }
             formError(data.errors.form);
             return;
@@ -312,7 +322,7 @@ function getStatus(i, next) {
     setTimeout(() => {
         ajax('/api/status/' + i, {}, data => {
             if(data.state == 1)
-                return window.location = (queryParams.wizard ? next + '?wizard=true' + '&' : next + '?') + 'factor' + i + '=' + data.factor + '&delta' + i + '=' + data.impulses * data.factor;
+                return window.location = (queryParams.wizard ? next + '?wizard=true' + '&' : next + '?') + 'factor' + '=' + data.factor + '&delta' + '=' + data.impulses * data.factor;
             formError(data.error);
             getStatus(i, next);
         }, false);
@@ -321,9 +331,20 @@ function getStatus(i, next) {
 function getImpulses(i) {
     setTimeout(() => {
         ajax('/api/status/' + i, {}, data => {
-            document.getElementById('delta' + i).textContent = data.impulses * parseInt(document.getElementById('factor' + i).value);
+            document.getElementById('delta').textContent = data.impulses * parseInt(document.getElementById('factor').value);
             formError(data.error);
             getImpulses(i);
+        }, false);
+    }, 2000);
+}
+function getImpulsesHall(i) {
+    setTimeout(() => {
+        ajax('/api/status/' + i, {}, data => {
+            value = data.impulses / parseInt(document.getElementById('factor').value);
+            value = parseFloat(value.toPrecision(3));
+            document.getElementById('delta').textContent = value;
+            formError(data.error);
+            getImpulsesHall(i);
         }, false);
     }, 2000);
 }
@@ -353,8 +374,18 @@ function mainStatus(){
         if(!data.length) return;
         const html = [];
         data.forEach(mess => {
-            html.push(`<p class="form-error mt24">${mess.error}${mess.link ? `<br><br><a class="link" href="${mess.link}">${mess.link_text}</a>` : ''}</p>`);
+            var error = tr(mess.error);
+            var link_text = tr(mess.link_text);
+            html.push(`<p class="form-error mt24">${error}${mess.link ? `<br><br><a class="link" href="${mess.link}">${link_text}</a>` : ''}</p>`);
         });
         document.getElementById('mainInfoText').innerHTML = html.join('');
     });
+}
+
+function get_next_wizard_by_input(input) {
+    if (input == 0) {
+        return '/setup_send.html?wizard=true';
+    } else {
+        return '/input/0/setup.html?wizard=true';
+    }
 }

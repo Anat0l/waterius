@@ -2,22 +2,15 @@
 #include "config.h"
 #include "Logging.h"
 
-#include "Blynk/BlynkConfig.h"
-#ifdef ESP8266
 #include <ESP8266WiFi.h>
-#endif
-#ifdef ESP32
-#include <WiFi.h>
-#endif
 #include <IPAddress.h>
 #include <EEPROM.h>
 #include "utils.h"
 #include "porting.h"
 #include "sync_time.h"
 #include "wifi_helpers.h"
-#ifdef ESP8266
 #include "flash_hal.h"
-#endif
+
 
 // Конвертируем значение переменных компиляции в строк
 #define VALUE_TO_STRING(x) #x
@@ -63,7 +56,6 @@ bool init_config(Settings &sett)
     sett.waterius_on = (uint8_t)true;
     sett.http_on = (uint8_t)false;
     sett.mqtt_on = (uint8_t)false;
-    sett.blynk_on = (uint8_t)false;
     sett.dhcp_off = (uint8_t)false;
 
     //можно оптимизировать и загружать из PROGMEM, но ради 2х полей смысла не вижу
@@ -71,8 +63,6 @@ bool init_config(Settings &sett)
     //strncpy_P(sett.waterius_host, WATERIUS_DEFAULT_DOMAIN, HOST_LEN);
 
     strncpy0(sett.waterius_host, WATERIUS_DEFAULT_DOMAIN, sizeof(WATERIUS_DEFAULT_DOMAIN));
-
-    strncpy0(sett.blynk_host, BLYNK_DEFAULT_DOMAIN, sizeof(BLYNK_DEFAULT_DOMAIN));
 
     String default_topic = String(MQTT_DEFAULT_TOPIC_PREFIX) + "/" + String(getChipId()) + "/";
     strncpy0(sett.mqtt_topic, default_topic.c_str(), default_topic.length() + 1);
@@ -91,13 +81,6 @@ bool init_config(Settings &sett)
     sett.mask = network_mask;
 
     // Можно задать константы при компиляции, чтобы Ватериус сразу заработал
-
-#ifdef BLYNK_KEY
-#pragma message(VAR_NAME_VALUE(BLYNK_KEY))
-    String key = VALUE(BLYNK_KEY);
-    strncpy0(sett.blynk_key, key.c_str(), BLYNK_KEY_LEN);
-    LOG_INFO(F("default Blynk key=") << key);
-#endif
 
 #ifdef WATERIUS_HOST
 #pragma message(VAR_NAME_VALUE(WATERIUS_HOST))
@@ -133,15 +116,9 @@ bool init_config(Settings &sett)
     LOG_INFO(F("default waterius email=") << VALUE(WATERIUS_EMAIL));
 #endif
 
-#ifdef WATERIUS_KEY
-#pragma message(VAR_NAME_VALUE(WATERIUS_KEY))
-    strncpy0(sett.waterius_key, VALUE(WATERIUS_KEY), WATERIUS_KEY_LEN);
-    LOG_INFO(F("default waterius key=") << VALUE(WATERIUS_KEY));
-#else
     LOG_INFO(F("Generate waterius key"));
     generateSha256Token(sett.waterius_key, WATERIUS_KEY_LEN, sett.waterius_email);
     LOG_INFO(F("waterius key=") << sett.waterius_key);
-#endif
 
 #ifdef WIFI_SSID
 #pragma message(VAR_NAME_VALUE(WIFI_SSID))
@@ -193,9 +170,6 @@ bool load_config(Settings &sett)
 
             sett.http_url[HOST_LEN - 1] = 0;
 
-            sett.blynk_key[BLYNK_KEY_LEN - 1] = 0;
-            sett.blynk_host[HOST_LEN - 1] = 0;
-
             sett.mqtt_host[HOST_LEN - 1] = 0;
             sett.mqtt_login[MQTT_LOGIN_LEN - 1] = 0;
             sett.mqtt_password[MQTT_PASSWORD_LEN - 1] = 0;
@@ -222,14 +196,6 @@ bool load_config(Settings &sett)
                 LOG_INFO(F("state=OFF"));
             }
             LOG_INFO(F("host=") << sett.http_url);
-
-            LOG_INFO(F("--- Blynk.cc ---- "));
-            if (sett.blynk_on) {
-                LOG_INFO(F("state=ON"));
-            } else {
-                LOG_INFO(F("state=OFF"));
-            }
-            LOG_INFO(F("host=") << sett.blynk_host << F(" key=") << sett.blynk_key);
 
             LOG_INFO(F("--- MQTT ---- "));
             if (sett.mqtt_on) {
@@ -264,9 +230,8 @@ bool load_config(Settings &sett)
             LOG_INFO(F("--- WIFI ---- "));
             LOG_INFO(F("wifi_ssid=") << sett.wifi_ssid);
             LOG_INFO(F("wifi_channel=") << sett.wifi_channel);
-#ifdef ESP8266
             LOG_INFO(F("wifi_phy_mode=") << wifi_phy_mode_title((WiFiPhyMode_t)sett.wifi_phy_mode));
-#endif
+
             // Всегда одно и тоже будет
             LOG_INFO(F("--- Counters ---- "));
             LOG_INFO(F("channel0 start=") << sett.channel0_start << F(", impulses=") << sett.impulses0_start << F(", factor=") << sett.factor0 << F(", name=") << sett.counter0_name);
@@ -294,26 +259,47 @@ void calculate_values(Settings &sett, const SlaveData &data, CalculatedData &cda
     LOG_INFO(F("new impulses=") << data.impulses0 << " " << data.impulses1);
     LOG_INFO(F("factor0=") << sett.factor0 << F(" factor1=") << sett.factor1);
 
-    if ((sett.factor1 > 0) && (sett.factor0 > 0))
+    if (sett.factor0 > 0) 
     {
         if (data.impulses0 < sett.impulses0_start) {
             sett.impulses0_start = data.impulses0;
             // Лучше потеряем в точности, чем будет показания миллионы
             LOG_ERROR(F("Impulses0 less than start. Reset impulses0_start"));
         }
-        cdata.channel0 = sett.channel0_start + (data.impulses0 - sett.impulses0_start) / 1000.0 * sett.factor0;
 
+        if (data.counter_type0 == HALL)
+        {
+            cdata.channel0 = sett.channel0_start + (data.impulses0 - sett.impulses0_start) / 1000.0 / sett.factor0;
+            cdata.delta0 = (data.impulses0 - sett.impulses0_previous) / sett.factor0;
+        }
+        else 
+        {
+            cdata.channel0 = sett.channel0_start + (data.impulses0 - sett.impulses0_start) / 1000.0 * sett.factor0;
+            cdata.delta0 = (data.impulses0 - sett.impulses0_previous) * sett.factor0;
+        }
+        LOG_INFO(F("new value0=") << cdata.channel0 << F(" delta0=") << cdata.delta0);
+    }
+
+    if (sett.factor1 > 0) 
+    {
         if (data.impulses1 < sett.impulses1_start) {
             sett.impulses1_start = data.impulses1;
             LOG_ERROR(F("Impulses1 less than start. Reset impulses1_start"));
         }
-        cdata.channel1 = sett.channel1_start + (data.impulses1 - sett.impulses1_start) / 1000.0 * sett.factor1;
-        LOG_INFO(F("new value0=") << cdata.channel0 << F(" value1=") << cdata.channel1);
 
-        cdata.delta0 = (data.impulses0 - sett.impulses0_previous) * sett.factor0;
-        cdata.delta1 = (data.impulses1 - sett.impulses1_previous) * sett.factor1;
-        LOG_INFO(F("delta0=") << cdata.delta0 << F(" delta1=") << cdata.delta1);
+        if (data.counter_type1 == HALL)
+        {
+            cdata.channel1 = sett.channel1_start + (data.impulses1 - sett.impulses1_start) / 1000.0 / sett.factor1;
+            cdata.delta1 = (data.impulses1 - sett.impulses1_previous) / sett.factor1;
+        }
+        else 
+        {
+            cdata.channel1 = sett.channel1_start + (data.impulses1 - sett.impulses1_start) / 1000.0 * sett.factor1;
+            cdata.delta1 = (data.impulses1 - sett.impulses1_previous) * sett.factor1;
+        }
+        LOG_INFO(F("new value1=") << cdata.channel1 << F(" delta1=") << cdata.delta1);
     }
+
 }
 
 /* Обновляем значения в конфиге*/
@@ -358,12 +344,12 @@ void factory_reset(Settings &sett)
     LOG_INFO(F("Save waterius_key=") << sett.waterius_key);
     String waterius_key = sett.waterius_key;
 
-    //TODO ESP.eraseConfig();
+    ESP.eraseConfig();
     delay(100);
     LOG_INFO(F("EEPROM erased"));
 
     // The flash cache maps the physical flash into the address space at offset  \ FS_PHYS_ADDR - ?
-    //TODO ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
+    ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
     LOG_INFO(F("0x40200000 erased"));
 
     delay(500);
@@ -375,10 +361,5 @@ void factory_reset(Settings &sett)
 
     delay(500);
 
-#ifdef ESP8266
     ESP.reset();
-#endif
-#ifdef ESP32
-    ESP.restart();
-#endif
 }

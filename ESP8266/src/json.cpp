@@ -72,14 +72,15 @@ void get_json_data(const Settings &sett, const SlaveData &data, const Calculated
 
     // настройки и события
     root[F("waketime")] = sett.wake_time;
+    root[F("period_min_tuned")] = sett.set_wakeup;
     root[F("period_min")] = sett.wakeup_per_min;
     root[F("setuptime")] = sett.setup_time;
-    root[F("good")] = data.diagnostic;
     root[F("boot")] = data.service;
     root[F("resets")] = data.resets;
     root[F("mode")] = sett.mode;
     root[F("setup_finished")] = sett.setup_finished_counter;
     root[F("setup_started")] = data.setup_started_counter;
+    root[F("ntp_errors")] = sett.ntp_error_counter;
 
     // waterius
     root[F("key")] = sett.waterius_key;
@@ -87,7 +88,6 @@ void get_json_data(const Settings &sett, const SlaveData &data, const Calculated
 
     // Интеграции с системами
     root[F("mqtt")] = is_mqtt(sett);
-    root[F("blynk")] = is_blynk(sett);
     root[F("ha")] = is_ha(sett);
     root[F("http")] = is_http(sett);
 

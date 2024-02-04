@@ -53,207 +53,237 @@ String replace_value(const String &var)
     return out;
 }
 
-String get_counter_title(const uint8_t name)
+String get_counter_img(const uint8_t input, const uint8_t name, const uint8_t ctype)
 {
-    switch (name)
+    if (ctype == CounterType::HALL) 
     {
-    case CounterName::WATER_COLD:
-        return F("Холодная вода");
-    case CounterName::WATER_HOT:
-        return F("Горячая вода");
-    case CounterName::ELECTRO:
-        return F("Электричество");
-    case CounterName::GAS:
-        return F("Газ");
-    case CounterName::HEAT:
-        return F("Тепло");
-    case CounterName::PORTABLE_WATER:
-        return F("Питьевая вода");
-    case CounterName::OTHER:
-    default:
-        return F("Другой");
+        switch (input)
+        {
+            case 0: return F("meter-hall-0.png");
+            case 1: return F("meter-hall-1.png");
+        }
+        
+    }
+    else if (ctype == CounterType::ELECTRONIC)
+    {
+        switch (input)
+        {
+            case 0: return F("meter-electro-0.png");
+            case 1: return F("meter-electro-1.png");
+        }
+    }
+    else if (name == CounterName::WATER_HOT)
+    {
+        switch (input)
+        {
+            case 0: return F("meter-hot-0.png");
+            case 1: return F("meter-hot-1.png");
+        }
+    }
+    else if (name == CounterName::GAS)
+    {
+        switch (input)
+        {
+            case 0: return F("meter-gas-0.png");
+            case 1: return F("meter-gas-1.png");
+        }
+    }
+    //if (name == CounterName::WATER_COLD)
+    switch (input)
+    {
+        case 0: 
+            return F("meter-cold-0.png");
+        case 1: 
+        default:
+            return F("meter-cold-1.png");
     }
 }
 
-String get_counter_img(const uint8_t name)
+String processor0(const String &var)
 {
-    switch (name)
-    {
-    case CounterName::WATER_COLD:
-        return F("meter-cold.png");
-    case CounterName::WATER_HOT:
-        return F("meter-hot.png");
-    case CounterName::ELECTRO:
-        return F("");
-    case CounterName::GAS:
-        return F("");
-    case CounterName::HEAT:
-        return F("");
-    case CounterName::PORTABLE_WATER:
-        return F("");
-    case CounterName::OTHER:
-    default:
-        return F("");
-    }
+    return processor_main(var, 0);
 }
 
-String get_counter_instruction(const uint8_t name)
+String processor1(const String &var)
 {
-    switch (name)
-    {
-    case CounterName::WATER_COLD:
-        return F("Спускайте воду в унитазе пока устройство не перенесёт вас на следующую страницу");
-    case CounterName::WATER_HOT:
-        return F("Откройте кран горячей воды пока устройство не перенесёт вас на следующую страницу");
-    case CounterName::ELECTRO:
-        return F("Включите электроприбор. После моргания светодиода должна открыться следующая страница. Если не открывается, значит некорректное подключение или счётчик не поддерживается.");
-    case CounterName::GAS:
-        return F("Приход импульса от газового счётчика долго ожидать, нажмите Пропустить и продолжите настройку.");
-    case CounterName::HEAT:
-        return F("Приход импульса от счётчика тепла долго ожидать, нажмите Пропустить и продолжите настройку.");
-    case CounterName::PORTABLE_WATER:
-        return F("Откройте кран питьевой воды пока устройство не перенесёт вас на следующую страницу");
-    case CounterName::OTHER:
-    default:
-        return F("При приходе импульса от счётчика устройство перенесёт вас на следующую страницу");
-    }
+    return processor_main(var, 1);
 }
 
 String processor(const String &var)
 {
-    if (var == FPSTR(PARAM_VERSION))
-        return String(data.version);  // data! runtime_data ещё не прочиталась
+    return processor_main(var);
+}
 
-    if (var == FPSTR(PARAM_VERSION_ESP))
+String processor_main(const String &var, const uint8_t input)
+{   
+    if (var == FPSTR(PARAM_VERSION))
+        return String(runtime_data.version);
+
+    else if (var == FPSTR(PARAM_VERSION_ESP))
         return FIRMWARE_VERSION;
 
-    if (var == FPSTR(PARAM_WATERIUS_HOST))
+    else if (var == FPSTR(PARAM_WATERIUS_HOST))
         return replace_value(sett.waterius_host);
-    if (var == FPSTR(PARAM_WATERIUS_EMAIL))
+    else if (var == FPSTR(PARAM_WATERIUS_EMAIL))
+    {
         if (!strstr(sett.waterius_email, "@waterius.ru"))
             return replace_value(sett.waterius_email);
-
-    if (var == FPSTR(PARAM_BLYNK_KEY))
-        return replace_value(sett.blynk_key);
-    if (var == FPSTR(PARAM_BLYNK_HOST))
-        return replace_value(sett.blynk_host);
-
-    if (var == FPSTR(PARAM_HTTP_URL))
+    }
+    else if (var == FPSTR(PARAM_HTTP_URL))
         return replace_value(sett.http_url);
 
-    if (var == FPSTR(PARAM_MQTT_HOST))
+    else if (var == FPSTR(PARAM_MQTT_HOST))
         return replace_value(sett.mqtt_host);
-    if (var == FPSTR(PARAM_MQTT_PORT))
+    else if (var == FPSTR(PARAM_MQTT_PORT))
         return String(sett.mqtt_port);
-    if (var == FPSTR(PARAM_MQTT_LOGIN))
+    else if (var == FPSTR(PARAM_MQTT_LOGIN))
         return replace_value(sett.mqtt_login);
-    if (var == FPSTR(PARAM_MQTT_PASSWORD))
+    else if (var == FPSTR(PARAM_MQTT_PASSWORD))
         return replace_value(sett.mqtt_password);
-    if (var == FPSTR(PARAM_MQTT_TOPIC))
+    else if (var == FPSTR(PARAM_MQTT_TOPIC))
         return replace_value(sett.mqtt_topic);
 
-    if (var == FPSTR(PARAM_CHANNEL0_START))
-        return String(sett.channel0_start);
-    if (var == FPSTR(PARAM_CHANNEL1_START))
-        return String(sett.channel1_start);
+    // на вебстраницах входа
+    else if (var == FPSTR(PARAM_INPUT))
+        return String(input);
+        
+    else if (var == FPSTR(PARAM_CHANNEL_START))
+    {
+        switch (input)
+        {
+            case 0: return String(sett.channel0_start);
+            case 1: return String(sett.channel1_start);
+        }
+    }
+    else if (var == FPSTR(PARAM_SERIAL))
+    {
+        switch (input)
+        {
+            case 0: return replace_value(sett.serial0);
+            case 1: return replace_value(sett.serial1);
+        }
+    }
 
-    if (var == FPSTR(PARAM_SERIAL0))
-        return replace_value(sett.serial0);
-    if (var == FPSTR(PARAM_SERIAL1))
-        return replace_value(sett.serial1);
+    else if (var == FPSTR(PARAM_COUNTER_NAME))
+    {
+        switch (input)
+        {
+            case 0: return String(sett.counter0_name);
+            case 1: return String(sett.counter1_name);
+        }
+    }
 
-    if (var == FPSTR(PARAM_IP))
+    else if (var == FPSTR(PARAM_COUNTER0_NAME))
+    {
+        return String(sett.counter0_name);
+    }
+
+    else if (var == FPSTR(PARAM_COUNTER1_NAME))
+    {
+        return String(sett.counter1_name);
+    }
+
+    else if (var == FPSTR(PARAM_COUNTER_IMG))
+    {
+        switch (input)
+        {
+            case 0: return get_counter_img(0, sett.counter0_name, runtime_data.counter_type0);
+            case 1: return get_counter_img(1, sett.counter1_name, runtime_data.counter_type1);
+        }
+    }
+
+    else if (var == FPSTR(PARAM_COUNTER_TYPE))
+    {
+        switch (input)
+        {
+            case 0: return String(runtime_data.counter_type0);
+            case 1: return String(runtime_data.counter_type1);
+        }
+    }
+
+    else if (var == FPSTR(PARAM_COUNTER0_TYPE))
+    {
+        return String(runtime_data.counter_type0);
+    }
+
+    else if (var == FPSTR(PARAM_COUNTER1_TYPE))
+    {
+        return String(runtime_data.counter_type1);
+    }
+
+    else if (var == FPSTR(PARAM_FACTOR))
+    {
+        switch (input)
+        {
+            case 0: return sett.factor0 == AS_COLD_CHANNEL ? F("10") : String(sett.factor0);
+            case 1: return sett.factor1 == AUTO_IMPULSE_FACTOR ? F("10") : String(sett.factor1);
+        }
+    }
+
+
+    else if (var == FPSTR(PARAM_IP))
         return IPAddress(sett.ip).toString();
-    if (var == FPSTR(PARAM_GATEWAY))
+    else if (var == FPSTR(PARAM_GATEWAY))
         return IPAddress(sett.gateway).toString();
-    if (var == FPSTR(PARAM_MASK))
+    else if (var == FPSTR(PARAM_MASK))
         return IPAddress(sett.mask).toString();
-    if (var == FPSTR(PARAM_MAC_ADDRESS))
+    else if (var == FPSTR(PARAM_MAC_ADDRESS))
         return WiFi.macAddress();
 
-    if (var == FPSTR(PARAM_WAKEUP_PER_MIN))
+    else if (var == FPSTR(PARAM_WAKEUP_PER_MIN))
         return String(sett.wakeup_per_min);
 
-    if (var == FPSTR(PARAM_MQTT_AUTO_DISCOVERY))
+    else if (var == FPSTR(PARAM_MQTT_AUTO_DISCOVERY))
         return template_bool(sett.mqtt_auto_discovery);
-    if (var == FPSTR(PARAM_MQTT_DISCOVERY_TOPIC))
+    else if (var == FPSTR(PARAM_MQTT_DISCOVERY_TOPIC))
         return replace_value(sett.mqtt_discovery_topic);
 
-    if (var == FPSTR(PARAM_NTP_SERVER))
+    else if (var == FPSTR(PARAM_NTP_SERVER))
         return String(sett.ntp_server);
 
-    if (var == FPSTR(PARAM_SSID))
+    else if (var == FPSTR(PARAM_SSID))
         return replace_value(sett.wifi_ssid);
-    if (var == FPSTR(PARAM_PASSWORD))
+    else if (var == FPSTR(PARAM_PASSWORD))
         return replace_value(sett.wifi_password);
 
-    if (var == FPSTR(PARAM_WIFI_PHY_MODE))
+    else if (var == FPSTR(PARAM_WIFI_PHY_MODE))
         return String(sett.wifi_phy_mode);
 
-    if (var == FPSTR(PARAM_COUNTER0_NAME))
-        return String(sett.counter0_name);
-    if (var == FPSTR(PARAM_COUNTER1_NAME))
-        return String(sett.counter1_name);
-
-    if (var == FPSTR(PARAM_COUNTER0_TITLE))
-        return get_counter_title(sett.counter0_name);
-    if (var == FPSTR(PARAM_COUNTER1_TITLE))
-        return get_counter_title(sett.counter1_name);
-
-    if (var == FPSTR(PARAM_COUNTER0_IMG))
-        return get_counter_img(sett.counter0_name);
-    if (var == FPSTR(PARAM_COUNTER1_IMG))
-        return get_counter_img(sett.counter1_name);
-
-    if (var == FPSTR(PARAM_COUNTER0_INSTRUCTION))
-        return get_counter_instruction(sett.counter0_name);
-    if (var == FPSTR(PARAM_COUNTER1_INSTRUCTION))
-        return get_counter_instruction(sett.counter1_name);
-
-    if (var == FPSTR(PARAM_COUNTER0_TYPE))
-        return String(runtime_data.counter_type0);
-    if (var == FPSTR(PARAM_COUNTER1_TYPE))
-        return String(runtime_data.counter_type1);
-
-    if (var == FPSTR(PARAM_FACTOR0))
-        return sett.factor0 == AS_COLD_CHANNEL ? F("10") : String(sett.factor0);
-
-    if (var == FPSTR(PARAM_FACTOR1))
-        return sett.factor1 == AUTO_IMPULSE_FACTOR ? F("10") : String(sett.factor1);
-
-    if (var == FPSTR(PARAM_WATERIUS_ON))
+    else if (var == FPSTR(PARAM_WATERIUS_ON))
         return template_bool(sett.waterius_on);
-    if (var == FPSTR(PARAM_HTTP_ON))
+    else if (var == FPSTR(PARAM_HTTP_ON))
         return template_bool(sett.http_on);
-    if (var == FPSTR(PARAM_MQTT_ON))
+    else if (var == FPSTR(PARAM_MQTT_ON))
         return template_bool(sett.mqtt_on);
-    if (var == FPSTR(PARAM_BLYNK_ON))
-        return template_bool(sett.blynk_on);
-    if (var == FPSTR(PARAM_DHCP_OFF))
+    else if (var == FPSTR(PARAM_DHCP_OFF))
         return template_bool(sett.dhcp_off);
 
     //
-    if (var == FPSTR(PARAM_BUILD_DATE_TIME))
+    else if (var == FPSTR(PARAM_BUILD_DATE_TIME))
         return String(__DATE__) + String(" ") + String(__TIME__);
-    if (var == FPSTR(PARAM_FS_SIZE))
+    else if (var == FPSTR(PARAM_FS_SIZE))
         return String(fs_info.totalBytes);
-    if (var == FPSTR(PARAM_FS_FREE))
+    else if (var == FPSTR(PARAM_FS_FREE))
         return String(fs_info.totalBytes - fs_info.usedBytes);
-    if (var == FPSTR(PARAM_WIFI_CONNECT_STATUS))
+    else if (var == FPSTR(PARAM_WIFI_CONNECT_STATUS))
     {   
         switch (wifi_connect_status)
         {   
             case WL_NO_SSID_AVAIL:
             case WL_CONNECT_FAILED:
             case WL_CONNECTION_LOST:
-                return String(F("Ошибка подключения. Попробуйте ещё раз.<br>Если не помогло, то пропишите статический ip. Еще можно зарезервировать MAC адрес Ватериуса в роутере. Если ничего не помогло, пришлите нам <a class='link' href='http://192.168.4.1/ssid.txt'>файл</a> параметров wi-fi сетей."));
+                return String(F("8")); //S_WIFI_CONNECTION_LOST "Ошибка подключения. Попробуйте ещё раз.<br>Если не помогло, то пропишите статический ip. Еще можно зарезервировать MAC адрес Ватериуса в роутере. Если ничего не помогло, пришлите нам <a class='link' href='http://192.168.4.1/ssid.txt'>файл</a> параметров wi-fi сетей.";
             case WL_WRONG_PASSWORD:
-                return String(F("Ошибка подключения: Некорректный пароль"));
-            case WL_NO_SHIELD:
+                return String(F("9")); //S_WL_WRONG_PASSWORD "Ошибка подключения: Некорректный пароль";
             case WL_IDLE_STATUS:
-            case WL_SCAN_COMPLETED:
-            case WL_CONNECTED:
+                return String(F("10")); //S_WL_IDLE_STATUS "Ошибка подключения: Код 0";
             case WL_DISCONNECTED:
+                return String(F("11")); //S_WL_DISCONNECTED "Ошибка подключения: Отключен";
+            case WL_NO_SHIELD:
+                return String(F("12")); //S_WL_NO_SHIELD "Ошибка подключения: Код 255";
+            case WL_SCAN_COMPLETED:
+                return String(F("13")); //S_WL_SCAN_COMPLETED "Ошибка подключения: Код 2";
+            case WL_CONNECTED:
                 break;
         }
     }    
@@ -305,8 +335,11 @@ void on_root(AsyncWebServerRequest *request)
     }
 }
 
-void start_active_point(Settings &sett, const SlaveData &data, CalculatedData &cdata)
-{
+void start_active_point(Settings &sett, CalculatedData &cdata)
+{   
+    //Т.к. интерфейс берёт данные из runtime_data, то туда нужно загрузить их
+    runtime_data = data;
+
     if (!LittleFS.begin())
     {
         LOG_INFO(F("FS: Mounting LittleFS error"));
@@ -444,29 +477,36 @@ void start_active_point(Settings &sett, const SlaveData &data, CalculatedData &c
     server->on("/reset.html", HTTP_GET, [](AsyncWebServerRequest *request)
                { request->send(LittleFS, "/reset.html", F("text/html"), false, processor); });
 
-    // Тип синего счётчика
-    server->on("/setup_blue_type.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_blue_type.html", F("text/html"), false, processor); });
+    // Настройка счётчика
 
-    // Детектирование синего счётчика (только Холодная и Горячая вода)
-    server->on("/setup_blue_water.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_blue_water.html", F("text/html"), false, processor); });
+    // красный
+    server->on("/input/0/setup.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_setup.html", F("text/html"), false, processor0); });
+    // синий
+    server->on("/input/1/setup.html", HTTP_GET, [](AsyncWebServerRequest *request)  
+               { request->send(LittleFS, "/input_setup.html", F("text/html"), false, processor1); });
 
-    // Параметры синего счётчика
-    server->on("/setup_blue.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_blue.html", F("text/html"), false, processor); });
+    // Детектирование счётчика (только Холодная и Горячая вода)
+    server->on("/input/0/detect.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_detect.html", F("text/html"), false, processor0); });
+    server->on("/input/1/detect.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_detect.html", F("text/html"), false, processor1); });
 
-    // Тип красного счётчика
-    server->on("/setup_red_type.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_red_type.html", F("text/html"), false, processor); });
+    server->on("/input/0/hall_detect.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_hall_detect.html", F("text/html"), false, processor0); });
+    server->on("/input/1/hall_detect.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_hall_detect.html", F("text/html"), false, processor1); });
 
-    // Детектирование красного счётчика (только Холодная и Горячая вода)
-    server->on("/setup_red_water.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_red_water.html", F("text/html"), false, processor); });
-
-    // Параметры красного счётчика
-    server->on("/setup_red.html", HTTP_GET, [](AsyncWebServerRequest *request)
-               { request->send(LittleFS, "/setup_red.html", F("text/html"), false, processor); });
+    // Параметры счётчика
+    server->on("/input/0/settings.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_settings.html", F("text/html"), false, processor0); });
+    server->on("/input/1/settings.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_settings.html", F("text/html"), false, processor1); });
+               
+    server->on("/input/0/hall_settings.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_hall_settings.html", F("text/html"), false, processor0); });
+    server->on("/input/1/hall_settings.html", HTTP_GET, [](AsyncWebServerRequest *request)
+               { request->send(LittleFS, "/input_hall_settings.html", F("text/html"), false, processor1); });
 
     // Отправка показаний
     server->on("/setup_send.html", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -501,12 +541,11 @@ void start_active_point(Settings &sett, const SlaveData &data, CalculatedData &c
 
     /*API*/
     server->on("/api/networks", HTTP_GET, get_api_networks);                       // Список Wi-Fi сетей (из wifi_list.html)
-    server->on("/api/setup_connect", HTTP_POST, post_api_setup_connect);           // Сохраняем настройки Wi-Fi + redirect: /api/connect
-    server->on("/api/call_connect", HTTP_GET, get_api_call_connect);               // Поднимаем флаг старта подключения и redirect в wifi_connect.html
+    server->on("/api/save_connect", HTTP_POST, post_api_save_connect);             // Сохраняем настройки Wi-Fi + redirect: /api/connect
+    server->on("/api/start_connect", HTTP_GET, get_api_start_connect);             // Поднимаем флаг старта подключения и redirect в wifi_connect.html
     server->on("/api/connect_status", HTTP_GET, get_api_connect_status);           // Статус подключения (из wifi_connect.html)
-    server->on("/api/setup", HTTP_POST, post_api_setup);                           // Сохраняем настройки
-    server->on("/api/set_counter_name/0", HTTP_POST, post_api_set_counter_name_0); // Сохраняем тип счётчика и переносим на страницу настройки
-    server->on("/api/set_counter_name/1", HTTP_POST, post_api_set_counter_name_1); // Сохраняем тип счётчика и переносим на страницу настройки
+    server->on("/api/save", HTTP_POST, post_api_save);                             // Сохраняем настройки
+    server->on("/api/save_input_type", HTTP_POST, post_api_save_input_type);       // Сохраняем тип счётчика и переносим на страницу настройки
     server->on("/api/main_status", HTTP_GET, get_api_main_status);                 // Информационные сообщения на главной странице
     server->on("/api/status/0", HTTP_GET, get_api_status_0);                       // Статус 0-го входа (ХВС)  (из setup_cold_welcome.html)
     server->on("/api/status/1", HTTP_GET, get_api_status_1);                       // Статус 1-го входа (ГВС)  (из setup_cold_welcome.html)

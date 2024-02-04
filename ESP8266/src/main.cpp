@@ -12,7 +12,6 @@
 #include "master_i2c.h"
 #include "senders/sender_waterius.h"
 #include "senders/sender_http.h"
-#include "senders/sender_blynk.h"
 #include "senders/sender_mqtt.h"
 #include "portal/active_point.h"
 #include "voltage.h"
@@ -66,7 +65,7 @@ void setup()
 
 void loop()
 {
-    uint8_t mode = SETUP_MODE; // TRANSMIT_MODE;
+    uint8_t mode = TRANSMIT_MODE; // TRANSMIT_MODE;
     bool config_loaded = false;
 
     // спрашиваем у Attiny85 повод пробуждения и данные true) 
@@ -86,7 +85,7 @@ void loop()
             // Режим настройки - запускаем точку доступа на 192.168.4.1
             // Запускаем точку доступа с вебсервером
 
-            start_active_point(sett, data, cdata);
+            start_active_point(sett, cdata);
 
             sett.setup_time = millis();
             sett.setup_finished_counter++;
@@ -125,7 +124,9 @@ void loop()
                 // устанавливать время только при использовани хттпс или мктт
                 if (is_mqtt(sett) || is_https(sett.waterius_host) || is_https(sett.http_url))
                 {
-                    sync_ntp_time(sett);
+                    if (!sync_ntp_time(sett)) {
+                        sett.ntp_error_counter++;
+                    }
                 }
 
                 voltage_ticker.detach(); // перестаем обновлять перед созданием объекта с данными
@@ -147,13 +148,6 @@ void loop()
                 if (send_http(sett, json_data))
                 {
                     LOG_INFO(F("HTTP: Send OK"));
-                }
-#endif
-
-#ifndef BLYNK_DISABLED
-                if (send_blynk(sett, json_data))
-                {
-                    LOG_INFO(F("BLYNK: Send OK"));
                 }
 #endif
 

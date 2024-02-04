@@ -3,10 +3,28 @@
 
 #include <Arduino.h>
 
-#define FIRMWARE_VERSION "1.0.6"
+#ifndef FIRMWARE_VERSION
+#error "Please define environment variable FIRMWARE_VERSION=x.x.x"
+#endif 
 
 /*
 Версии прошивки для ESP
+
+1.1.0  - 2024.01.24 - dontsovcmc
+                      1. Рефакторинг веб интерфейса
+                      2. Удалён blynk
+                      3. Ошибка если прошивка attiny будет ниже или равна 29 (getSlaveData)
+                      4. Добавил картинки на каждый тип счетчика и вход
+                      5. Перенес строки в string.js TODO избавится от русских слов в CPP файлах
+                      6. Удалил поле good. Всегда было 1.
+                      7. Добавил в json поле ntp_errors - кол-во ошибок синхронизации времени
+                      8. Поддержка датчиков расхода воды. Протестировали на SEA YF-S402B G1/4
+                      
+1.0.7  - 2023.12.24 - dontsovcmc 
+                      1. Не отображался тип входа при повторной настройке входов
+                      2. TRANSMIT_MODE по умолчанию. гипотеза, что это поможет при кривом включении кнопкой.
+                      3. Добавил в данные period_min_tuned (период пробуждения с учётом разной частоты attiny)
+                      4. МАС адрес на веб странице теперь настоящий
 
 1.0.6  - 2023.12.02 - dontsovcmc
 
@@ -195,10 +213,6 @@
     Уровень логирования
 */
 
-// уровни логирования WifiManager
-#ifndef DWM_DEBUG_LEVEL
-#define DWM_DEBUG_LEVEL 0
-#endif
 
 #define BRAND_NAME "waterius"
 
@@ -221,10 +235,8 @@
 #define WATERIUS_KEY_LEN 34
 #define HOST_LEN 64
 
-#define BLYNK_KEY_LEN 34
+#define BLYNK_RESERVED 98
 
-#define BLYNK_EMAIL_TITLE_LEN 64
-#define BLYNK_EMAIL_TEMPLATE_LEN 200
 
 #define MQTT_LOGIN_LEN 32
 #define MQTT_PASSWORD_LEN 66 //ansible образ home assistant генерирует пароль длиной 64
@@ -353,11 +365,8 @@ struct Settings
     char waterius_key[WATERIUS_KEY_LEN] = {0};
     char waterius_email[EMAIL_LEN] = {0};
 
-    // SEND_BLYNK
-    // уникальный ключ устройства blynk
-    char blynk_key[BLYNK_KEY_LEN] = {0};
-    // сервер blynk.com или свой blynk сервер
-    char blynk_host[HOST_LEN] = {0};
+    // 
+    char reserved_blynk[BLYNK_RESERVED] = {0};
 
     char http_url[HOST_LEN] = {0};
 
@@ -394,8 +403,7 @@ struct Settings
     uint32_t impulses1_start = 0;
 
     /*
-    Не понятно, как получить от Blynk прирост показаний,
-    поэтому сохраним их в памяти каждое включение
+    Прирост показаний. Каждое включение
     */
     uint32_t impulses0_previous = 0;
     uint32_t impulses1_previous = 0;
@@ -444,7 +452,7 @@ struct Settings
 
     /* Публиковать данные для автоматического добавления в Homeassistant */
     uint8_t mqtt_auto_discovery = (uint8_t)MQTT_AUTO_DISCOVERY;
-    uint8_t reserved2 = 0;
+    uint8_t ntp_error_counter = 0;
 
     /* Топик MQTT*/
     char mqtt_discovery_topic[MQTT_TOPIC_LEN] = DISCOVERY_TOPIC;
@@ -481,8 +489,8 @@ struct Settings
     uint8_t http_on = (uint8_t) false;
     /* Включение передачи по mqtt */
     uint8_t mqtt_on = (uint8_t) false;
-    /* Включение Blynk */
-    uint8_t blynk_on = (uint8_t) false;
+    
+    uint8_t reserved4 = 0;
     /* Включение DHCP или статических настроек */
     uint8_t dhcp_off = (uint8_t) false;
 
@@ -491,7 +499,7 @@ struct Settings
     Зарезервируем кучу места, чтобы не писать конвертер конфигураций.
     Будет актуально для On-the-Air обновлений
     */
-    uint8_t reserved4[84] = {0};
+    uint8_t reserved9[84] = {0};
 
 }; // 960 байт
 
