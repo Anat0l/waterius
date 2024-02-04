@@ -1,5 +1,10 @@
 
+#ifdef ESP8266
 #include "ESPAsyncTCP.h"
+#else
+#include "esp_wifi_types.h"
+#include "esp_wifi.h"
+#endif
 #include "ESPAsyncWebServer.h"
 #include "WebHandlerImpl.h"
 #include <IPAddress.h>
@@ -26,7 +31,6 @@ wl_status_t wifi_connect_status = WL_DISCONNECTED;
 
 const String localIPURL = "http://192.168.4.1";
 
-FSInfo fs_info;
 
 extern SlaveData data;
 extern SlaveData runtime_data;
@@ -262,9 +266,9 @@ String processor_main(const String &var, const uint8_t input)
     else if (var == FPSTR(PARAM_BUILD_DATE_TIME))
         return String(__DATE__) + String(" ") + String(__TIME__);
     else if (var == FPSTR(PARAM_FS_SIZE))
-        return String(fs_info.totalBytes);
+        return String(LittleFS.totalBytes());
     else if (var == FPSTR(PARAM_FS_FREE))
-        return String(fs_info.totalBytes - fs_info.usedBytes);
+        return String(LittleFS.totalBytes() - LittleFS.usedBytes());
     else if (var == FPSTR(PARAM_WIFI_CONNECT_STATUS))
     {   
         switch (wifi_connect_status)
@@ -273,8 +277,8 @@ String processor_main(const String &var, const uint8_t input)
             case WL_CONNECT_FAILED:
             case WL_CONNECTION_LOST:
                 return String(F("8")); //S_WIFI_CONNECTION_LOST "Ошибка подключения. Попробуйте ещё раз.<br>Если не помогло, то пропишите статический ip. Еще можно зарезервировать MAC адрес Ватериуса в роутере. Если ничего не помогло, пришлите нам <a class='link' href='http://192.168.4.1/ssid.txt'>файл</a> параметров wi-fi сетей.";
-            case WL_WRONG_PASSWORD:
-                return String(F("9")); //S_WL_WRONG_PASSWORD "Ошибка подключения: Некорректный пароль";
+            //case WL_WRONG_PASSWORD:
+            //   return String(F("9")); //S_WL_WRONG_PASSWORD "Ошибка подключения: Некорректный пароль";
             case WL_IDLE_STATUS:
                 return String(F("10")); //S_WL_IDLE_STATUS "Ошибка подключения: Код 0";
             case WL_DISCONNECTED:
@@ -311,7 +315,7 @@ void on_root(AsyncWebServerRequest *request)
 
     if (sett.factor1 == AUTO_IMPULSE_FACTOR)
     {
-        if (wifi_connect_status == WL_CONNECT_FAILED || wifi_connect_status == WL_CONNECTION_LOST || wifi_connect_status == WL_WRONG_PASSWORD)
+        if (wifi_connect_status == WL_CONNECT_FAILED || wifi_connect_status == WL_CONNECTION_LOST)
         {
             LOG_INFO(F("> captive_portal_error.html"));
             request->send(LittleFS, "/captive_portal_error.html", F("text/html"), false);
@@ -347,29 +351,31 @@ void start_active_point(Settings &sett, CalculatedData &cdata)
     }
     LOG_INFO(F("FS: LittleFS mounted"));
     
-    LittleFS.info(fs_info);
 
-    LOG_INFO(F("FS: ") << fs_info.totalBytes << F(" bytes, size"));
-    LOG_INFO(F("FS: ") << fs_info.totalBytes - fs_info.usedBytes << F(" bytes, used"));
+    LOG_INFO(F("FS: ") << LittleFS.totalBytes() << F(" bytes, size"));
+    LOG_INFO(F("FS: ") << LittleFS.totalBytes() - LittleFS.usedBytes() << F(" bytes, used"));
 
     // Если настройки есть в конфиге то присваиваем их
     if (sett.wifi_ssid[0])
     {
         LOG_INFO(F("Apply SSID:") << String(sett.wifi_ssid) << F(" from config"));
-        struct station_config conf;
-        conf.bssid_set = 0;
-        memcpy(conf.ssid, sett.wifi_ssid, sizeof(conf.ssid));
+        wifi_config_t current_conf;
+        esp_wifi_get_config((wifi_interface_t)ESP_IF_WIFI_STA, &current_conf);
+        memset(current_conf.sta.ssid, 0, sizeof(current_conf.sta.ssid));
+        memset(current_conf.sta.password, 0, sizeof(current_conf.sta.password));
+
+        memcpy(current_conf.sta.ssid, sett.wifi_ssid, sizeof(current_conf.sta.ssid));
         if (sett.wifi_password[0])
         {
-            memcpy(conf.password, sett.wifi_password, sizeof(conf.password));
+            memcpy(current_conf.sta.password, sett.wifi_password, sizeof(current_conf.sta.password));
             LOG_INFO(F("Apply password from config"));
         }
         else
         {
-            conf.password[0] = 0;
+            current_conf.sta.password[0] = 0;
             LOG_INFO(F("No password in config"));
         }
-        wifi_station_set_config(&conf);
+        esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &current_conf);
     }
     else
     {

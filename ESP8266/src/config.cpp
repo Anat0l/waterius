@@ -2,14 +2,15 @@
 #include "config.h"
 #include "Logging.h"
 
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <IPAddress.h>
 #include <EEPROM.h>
 #include "utils.h"
 #include "porting.h"
 #include "sync_time.h"
 #include "wifi_helpers.h"
-#include "flash_hal.h"
+#include "esp_wifi.h"
+//#include "flash_hal.h"
 
 
 // Конвертируем значение переменных компиляции в строк
@@ -230,7 +231,10 @@ bool load_config(Settings &sett)
             LOG_INFO(F("--- WIFI ---- "));
             LOG_INFO(F("wifi_ssid=") << sett.wifi_ssid);
             LOG_INFO(F("wifi_channel=") << sett.wifi_channel);
-            LOG_INFO(F("wifi_phy_mode=") << wifi_phy_mode_title((WiFiPhyMode_t)sett.wifi_phy_mode));
+
+            wifi_phy_mode_t pmode;
+            esp_err_t ret = esp_wifi_sta_get_negotiated_phymode(&pmode);
+            LOG_INFO(F("wifi_phy_mode=") << wifi_phy_mode_title(pmode));
 
             // Всегда одно и тоже будет
             LOG_INFO(F("--- Counters ---- "));
@@ -344,15 +348,20 @@ void factory_reset(Settings &sett)
     LOG_INFO(F("Save waterius_key=") << sett.waterius_key);
     String waterius_key = sett.waterius_key;
 
-    ESP.eraseConfig();
+    wifi_config_t current_conf;
+    esp_wifi_get_config((wifi_interface_t)ESP_IF_WIFI_STA, &current_conf);
+    memset(current_conf.sta.ssid, 0, sizeof(current_conf.sta.ssid));
+    memset(current_conf.sta.password, 0, sizeof(current_conf.sta.password));
+    esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &current_conf);
+
     delay(100);
-    LOG_INFO(F("EEPROM erased"));
+    LOG_INFO(F("Wifi erased"));
 
     // The flash cache maps the physical flash into the address space at offset  \ FS_PHYS_ADDR - ?
-    ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
-    LOG_INFO(F("0x40200000 erased"));
+    //ESP.flashEraseSector(((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE));
+    //LOG_INFO(F("0x40200000 erased"));
 
-    delay(500);
+    //delay(500);
 
     init_config(sett);
     strncpy0(sett.waterius_key, waterius_key.c_str(), WATERIUS_KEY_LEN);
@@ -361,5 +370,5 @@ void factory_reset(Settings &sett)
 
     delay(500);
 
-    ESP.reset();
+    ESP.restart();
 }

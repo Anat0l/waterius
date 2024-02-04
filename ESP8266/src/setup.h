@@ -500,7 +500,6 @@ struct Settings
     Будет актуально для On-the-Air обновлений
     */
     uint8_t reserved9[84] = {0};
-
 }; // 960 байт
 
 #endif

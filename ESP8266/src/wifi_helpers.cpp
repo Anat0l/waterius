@@ -7,6 +7,7 @@
 #endif
 #ifdef ESP32
 #include <WiFi.h>
+#include "esp_wifi.h"
 #endif
 #define WIFI_SET_MODE_ATTEMPTS 2
 
@@ -135,6 +136,28 @@ String wifi_phy_mode_title(const WiFiPhyMode_t m)
         return String((int)m);
     }
 }
+#else
+String wifi_phy_mode_title(const wifi_phy_mode_t m)
+{
+    // WiFi.setPhyMode(WIFI_PHY_MODE_11B = 1, WIFI_PHY_MODE_11G = 2, WIFI_PHY_MODE_11N = 3);
+    switch (m)
+    {
+    case WIFI_PHY_MODE_LR:
+        return F("LowRate");
+    case WIFI_PHY_MODE_11B:
+        return F("B");
+    case WIFI_PHY_MODE_11G:
+        return F("G");
+    case WIFI_PHY_MODE_HT20:
+        return F("NT20");
+    case WIFI_PHY_MODE_HT40:
+        return F("NT40");
+    case WIFI_PHY_MODE_HE20:
+        return F("NE20");
+    default:
+        return String((int)m);
+    }
+}
 #endif
 
 bool wifi_connect(Settings &sett, WiFiMode_t wifi_mode /*= WIFI_STA*/)
@@ -152,10 +175,14 @@ bool wifi_connect(Settings &sett, WiFiMode_t wifi_mode /*= WIFI_STA*/)
             uint8_t *bssid = WiFi.BSSID();
             memcpy((void *)&sett.wifi_bssid, (void *)bssid, sizeof(sett.wifi_bssid)); // сохраняем для быстрого коннекта
             LOG_INFO(F("WIFI: Connected."));
+            
+            wifi_phy_mode_t pmode;
+            esp_err_t ret = esp_wifi_sta_get_negotiated_phymode(&pmode);
+
             LOG_INFO(F("WIFI: SSID: ") << WiFi.SSID() 
                 << F(" Channel: ") << WiFi.channel() 
                 << F(" BSSID: ") << WiFi.BSSIDstr()
-                << F(" mode: ") << wifi_phy_mode_title(WiFi.getPhyMode()));
+                << F(" mode: ") << wifi_phy_mode_title(pmode));
 
             LOG_INFO(F("WIFI: Time spent ") << millis() - start_time << F(" ms"));
             return true;

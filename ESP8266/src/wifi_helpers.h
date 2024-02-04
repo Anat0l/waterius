@@ -25,6 +25,8 @@ extern void wifi_shutdown();
 
 #ifdef ESP8266
 extern String wifi_phy_mode_title(const WiFiPhyMode_t mode);
+#else
+String wifi_phy_mode_title(const wifi_phy_mode_t m);
 #endif
 
 extern void write_ssid_to_file();

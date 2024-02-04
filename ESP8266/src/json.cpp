@@ -50,8 +50,12 @@ void get_json_data(const Settings &sett, const SlaveData &data, const Calculated
 
     // Wifi и сеть
     root[F("channel")] = WiFi.channel();
-    root[F("wifi_phy_mode")] = 'no'; //TODO wifi_phy_mode_title(WiFi.getPhyMode()); esp_err_t error_code = esp_wifi_get_protocol(current_wifi_interface, &current_protocol);
-    root[F("wifi_phy_mode_s")] = 'no'; //TODO wifi_phy_mode_title((WiFiPhyMode_t)sett.wifi_phy_mode);
+
+    wifi_phy_mode_t pmode;
+    esp_err_t ret = esp_wifi_sta_get_negotiated_phymode(&pmode);
+
+    root[F("wifi_phy_mode")] = wifi_phy_mode_title(pmode); 
+    root[F("wifi_phy_mode_s")] = wifi_phy_mode_title((wifi_phy_mode_t)sett.wifi_phy_mode);
 
     uint8_t *bssid = WiFi.BSSID();
     char router_mac[18] = {0};

@@ -156,7 +156,7 @@ void post_api_save_connect(AsyncWebServerRequest *request)
 
         if (params.length())
         {
-            ret[F("redirect")] = F("/api/start_connect?") + params;
+            ret[F("redirect")] = String(F("/api/start_connect?")) + params;
         }
         else 
         {
@@ -206,12 +206,12 @@ void get_api_main_status(AsyncWebServerRequest *request)
     wl_status_t status = WiFi.status();
     LOG_INFO(F("WIFI: status=") << status);
     
-    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_WRONG_PASSWORD)
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST)
     {
         JsonObject obj = array.createNestedObject();
         obj["error"] = F("1");  // S_WIFI_CONNECT "Ошибка подключения к Wi-Fi"
         obj["link_text"] = F("5"); // S_SETUP Настроить
-        obj["link"] = F("/wifi_settings.html?status_code=") + String(status);
+        obj["link"] = String(F("/wifi_settings.html?status_code=")) + String(status);
     }
     else
     {
@@ -416,7 +416,7 @@ void save_ip_param(AsyncWebParameter *p, uint32_t &v, JsonObject &errorsObj)
     IPAddress ip;
     if (ip.fromString(p->value()))
     {
-        v = ip.v4();
+        v = ip;
         LOG_INFO(FPSTR(PARAM_SAVED) << p->name() << F("=") << ip.toString());
     }
     else
@@ -752,7 +752,8 @@ void post_api_save_input_type(AsyncWebServerRequest *request)
     bool wizard = find_wizard_param(request);
     if (wizard)
     {
-        ret[F("redirect")] = ret[F("redirect")] + F("?wizard=true");
+        String redirect = ret[F("redirect")];
+        ret[F("redirect")] = redirect + String(F("?wizard=true"));
     }
 
     AsyncResponseStream *response = request->beginResponseStream("application/json");
