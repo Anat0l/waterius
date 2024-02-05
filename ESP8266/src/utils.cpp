@@ -270,23 +270,23 @@ extern void generateSha256Token(char *token, const int token_len, const char *em
 	}
 #endif 
 #ifdef ESP32
-	unsigned char sha256Result[32];
+	unsigned char sha256Result[33];
 	unsigned char *hash = &sha256Result[0];
 	mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
-    mbedtls_sha256_starts(&ctx, 0);
+    mbedtls_sha256_starts_ret(&ctx, 0);
 	randomSeed(micros());
 	uint32_t salt = rand();
     mbedtls_sha256_update(&ctx, (const unsigned char*)salt, 4);
-    mbedtls_sha256_finish(&ctx, sha256Result);
+    mbedtls_sha256_finish_ret(&ctx, sha256Result);
     mbedtls_sha256_free(&ctx);
 
 	static const char digits[] = "0123456789ABCDEF";
 
-	for (int i = 0; i < 32 && i < token_len - 1; i += 2, hash++)
+	for (int i = 0, j = 0; i < 32 && j < token_len - 1; i++, j+=2)
 	{
-		token[i] = digits[*hash >> 4];
-		token[i + 1] = digits[*hash & 0xF];
+		token[j] = digits[sha256Result[i] >> 4];
+		token[j + 1] = digits[sha256Result[i] & 0xF];
 	}
 #endif
 
