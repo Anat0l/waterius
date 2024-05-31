@@ -91,7 +91,7 @@ bool update_settings(String &topic, String &payload, Settings &sett, const Slave
         } else if (param.equals(F("ch0")))
         {
             float ch0 = payload.toFloat(); // Преобразовали во флоат просто для проверки на условие в следующей строке
-            if (ch0 > 0)
+            if (ch0 >= 0)
             {
                 updated = true;
                 LOG_INFO(F("MQTT: CALLBACK: Old Settings.channel0_start: ") << sett.channel0_start);
@@ -105,7 +105,7 @@ bool update_settings(String &topic, String &payload, Settings &sett, const Slave
 
                 if (json_data.containsKey("ch0"))
                 {
-                    json_data[F("ch0")] = (int)(ch0 * 1000 + 5) / 1000.0;  // исправляем округление
+                    json_data[F("ch0")] = (int)(ch0 * 100 + 0.5) / 100.0;  // исправляем округление
                 }
                 sett.setup_time = 0;
                 LOG_INFO(F("MQTT: CALLBACK: reset Settings.setup_time: ") << sett.setup_time);
@@ -113,7 +113,7 @@ bool update_settings(String &topic, String &payload, Settings &sett, const Slave
         } else if (param.equals(F("ch1")))
         {
             float ch1 = payload.toFloat();
-            if (ch1 > 0)
+            if (ch1 >= 0)
             {
                 updated = true;
                 LOG_INFO(F("MQTT: CALLBACK: Old Settings.channel1_start: ") << sett.channel1_start);
@@ -127,7 +127,7 @@ bool update_settings(String &topic, String &payload, Settings &sett, const Slave
 
                 if (json_data.containsKey("ch1"))
                 {
-                    json_data[F("ch1")] = (int)(ch1 * 1000 + 5) / 1000.0;
+                    json_data[F("ch1")] = (int)(ch1 * 100 + 0.5) / 100.0;
                 }
 
                 sett.setup_time = 0;

@@ -105,6 +105,7 @@ void publish_discovery_entity_extended(PubSubClient &mqtt_client,
  * @param json_attributes_template аттрибуты сенсора
  * @param channel индекс канала при наличии
  * @param channel_name enum типа канала из интерфейса настройки
+ * @param pub_config удаляет или публикует данные топика
  */
 void publish_discovery_entity_channel(PubSubClient &mqtt_client, 
                                       const String &topic, 
@@ -114,7 +115,8 @@ void publish_discovery_entity_channel(PubSubClient &mqtt_client,
                                       const char *const entity[MQTT_PARAM_COUNT],
                                       const String &json_attributes_template,
                                       const int channel = NONE,
-                                      const int channel_name = NONE)
+                                      const int channel_name = NONE,
+                                      const bool pub_config = true)
 {
     String entity_type = FPSTR(entity[0]);
     String entity_name = FPSTR(entity[1]);
@@ -132,15 +134,20 @@ void publish_discovery_entity_channel(PubSubClient &mqtt_client,
 
     LOG_INFO(F("MQTT: DISCOVERY:  Sensor: ") << entity_name);
 
-    String payload = build_entity_discovery(topic.c_str(),
-                                            entity_type.c_str(), entity_name.c_str(), entity_id.c_str(),
-                                            state_class.c_str(), device_class.c_str(), unit_of_meas.c_str(),
-                                            entity_category.c_str(), icon.c_str(),
-                                            device_id.c_str(), device_mac.c_str(),
-                                            true, nullptr, nullptr,
-                                            nullptr, nullptr, nullptr,
-                                            topic.c_str(), json_attributes_template.c_str(),
-                                            advanced_conf.c_str());
+    String payload = "";
+    
+    if (pub_config)
+    {
+        payload = build_entity_discovery(topic.c_str(),
+                                                entity_type.c_str(), entity_name.c_str(), entity_id.c_str(),
+                                                state_class.c_str(), device_class.c_str(), unit_of_meas.c_str(),
+                                                entity_category.c_str(), icon.c_str(),
+                                                device_id.c_str(), device_mac.c_str(),
+                                                true, nullptr, nullptr,
+                                                nullptr, nullptr, nullptr,
+                                                topic.c_str(), json_attributes_template.c_str(),
+                                                advanced_conf.c_str());        
+    }
 
     String entity_discovery_topic = String(discovery_topic) + "/" + entity_type + "/" + uniqueId_prefix + "/" + entity_id + "/config";
     publish(mqtt_client, entity_discovery_topic, payload);
@@ -237,11 +244,11 @@ void publish_discovery_channel_entities(PubSubClient &mqtt_client,
     // Публикуем настройку типа входа, даже если он отключён
     publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_CTYPE, "", channel, channel_name);
     
-    if (!channel_is_work)
-    {
-        LOG_INFO(F("MQTT: Channel ") + String(channel) + F(" is turned off"));
-        return;
-    }
+//    if (!channel_is_work)
+//    {
+//        LOG_INFO(F("MQTT: Channel ") + String(channel) + F(" is turned off"));
+//        return;
+//    }
 
     String json_attributes_template = channel_entity_attributes(channel, channel_name);
 
@@ -251,26 +258,26 @@ void publish_discovery_channel_entities(PubSubClient &mqtt_client,
         case CounterName::WATER_HOT:
         case CounterName::PORTABLE_WATER:
         case CounterName::OTHER:
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_WATER_TOTAL, json_attributes_template, channel, channel_name);
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_WATER_TOTAL_CFG, "", channel, channel_name);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_WATER_TOTAL, json_attributes_template, channel, channel_name, channel_is_work);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_WATER_TOTAL_CFG, "", channel, channel_name, channel_is_work);
             break;
         case CounterName::GAS:
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_GAS_TOTAL, json_attributes_template, channel, channel_name);
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_GAS_TOTAL_CFG, "", channel, channel_name);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_GAS_TOTAL, json_attributes_template, channel, channel_name, channel_is_work);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_GAS_TOTAL_CFG, "", channel, channel_name, channel_is_work);
             break;
         case CounterName::ELECTRO:
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_ELECTRO_TOTAL, json_attributes_template, channel, channel_name);
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_ELECTRO_TOTAL_CFG, "", channel, channel_name);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_ELECTRO_TOTAL, json_attributes_template, channel, channel_name, channel_is_work);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_ELECTRO_TOTAL_CFG, "", channel, channel_name, channel_is_work);
             break;
         case CounterName::HEAT:
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_HEAT_TOTAL, json_attributes_template, channel, channel_name);
-            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_HEAT_TOTAL_CFG, "", channel, channel_name);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_HEAT_TOTAL, json_attributes_template, channel, channel_name, channel_is_work);
+            publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_HEAT_TOTAL_CFG, "", channel, channel_name, channel_is_work);
             break;
     }
 
-    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_SERIAL, "", channel, channel_name);
-    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_FACTOR, "", channel, channel_name);
-    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_CNAME, "", channel, channel_name);
+    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_SERIAL, "", channel, channel_name, channel_is_work);
+    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_FACTOR, "", channel, channel_name, channel_is_work);
+    publish_discovery_entity_channel(mqtt_client, topic, discovery_topic, device_id, device_mac, ENTITY_CHANNEL_CNAME, "", channel, channel_name, channel_is_work);
 
 }
 

@@ -18,10 +18,10 @@ void get_json_data(const Settings &sett, const SlaveData &data, const Calculated
     // Сведения по каналам
     root[F("delta0")] = cdata.delta0;
     root[F("delta1")] = cdata.delta1;
-    root[F("ch0")] = cdata.channel0;
-    root[F("ch1")] = cdata.channel1;
-    root[F("ch0_start")] = sett.channel0_start;
-    root[F("ch1_start")] = sett.channel1_start;
+    root[F("ch0")] = (int)(cdata.channel0 * 100 + 0.5) / 100.0;
+    root[F("ch1")] = (int)(cdata.channel1 * 100 + 0.5) / 100.0;
+    root[F("ch0_start")] = (int)(sett.channel0_start * 100 + 0.5) / 100.0;
+    root[F("ch1_start")] = (int)(sett.channel1_start * 100 + 0.5) / 100.0;
     root[F("imp0")] = data.impulses0;
     root[F("imp1")] = data.impulses1;
     root[F("f0")] = sett.factor0;
