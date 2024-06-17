@@ -18,7 +18,7 @@
 Фьюзы: E:FF, H:DF, L:62
 
 #### Утилита Avrdude
-http://www.avislab.com/blog/wp-content/uploads/2012/12/avrdude.zip
+Актуальный релиз на [[github](https://github.com/avrdudes/avrdude/releases)]
 
 #### Arduino в качестве ISP программатора (3.3в-5в).
 
